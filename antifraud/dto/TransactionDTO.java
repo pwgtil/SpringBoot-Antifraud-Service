@@ -25,26 +25,24 @@ public class TransactionDTO {
     private Long id;
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-//    @Min(value = 1)
     @NotNull
     private Long amount;
+
+    @NotNull
+    // valid IPv4 addresses
+    @Pattern(regexp = "\\b(1?\\d{1,2}|2[0-4]\\d|25[0-5])\\.(1?\\d{1,2}|2[0-4]\\d|25[0-5])\\.(1?\\d{1,2}|2[0-4]\\d|25[0-5])\\.(1?\\d{1,2}|2[0-4]\\d|25[0-5])\\b")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String ip;
+
+    @LuhnCheck
+    @NotNull
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String number;
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private TransactionStatus result;
 
-    @JsonIgnore
-//    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    // valid IPv4 addresses
-    @Pattern(regexp = "\\b(1?\\d{1,2}|2[0-4]\\d|25[0-5])\\.(1?\\d{1,2}|2[0-4]\\d|25[0-5])\\.(1?\\d{1,2}|2[0-4]\\d|25[0-5])\\.(1?\\d{1,2}|2[0-4]\\d|25[0-5])\\b")
-    private String ip;
-
-    @JsonIgnore
-    @LuhnCheck
-//    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private String number;
-
-    @JsonIgnore
-//    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String info;
 
     @JsonIgnore
