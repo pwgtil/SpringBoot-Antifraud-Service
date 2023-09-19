@@ -1,18 +1,19 @@
 package antifraud.controller;
 
-import antifraud.controller.routing.User;
 import antifraud.dto.UserDTO;
 import antifraud.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 @RestController
 public class UserController {
+
     private UserService userService;
     private PasswordEncoder passwordEncoder;
 
@@ -22,12 +23,22 @@ public class UserController {
         this.passwordEncoder = passwordEncoder;
     }
 
-//    @PostMapping(User.PATH)
-//    public ResponseEntity<UserDTO> registerUser(@RequestBody UserDTO request) {
-//        UserDTO userDTO = UserDTO.builder()
-//                .username(request.getUsername())
-//                .name(request.getName())
-//                .password(passwordEncoder.encode(request.getPassword()))
-//    }
+    @PostMapping(antifraud.controller.routing.User.PATH)
+    public ResponseEntity<UserDTO> registerUser(@RequestBody UserDTO userDTO) {
+        userDTO.encodePassword(passwordEncoder);
+        userDTO = userService.registerUser(userDTO);
+        return new ResponseEntity<>(userDTO, HttpStatus.CREATED);
+    }
 
+    @GetMapping(antifraud.controller.routing.List.PATH)
+    public ResponseEntity<List<UserDTO>> getAuthorizedUsers() {
+        List<UserDTO> usersList = userService.getAuthorizedUsers();
+        return new ResponseEntity<>(usersList, HttpStatus.OK);
+    }
+
+    @DeleteMapping(antifraud.controller.routing.User.PATH + "/{username}")
+    public ResponseEntity<Map<String, String>> deleteUser(@PathVariable String username) {
+        userService.deleteUser(username);
+        return new ResponseEntity<>(Map.of("username", username, "status", "Deleted successfully!"), HttpStatus.OK);
+    }
 }

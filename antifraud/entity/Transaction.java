@@ -3,6 +3,7 @@ package antifraud.entity;
 import antifraud.entity.enums.TransactionRegion;
 import antifraud.entity.enums.TransactionStatus;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,8 @@ import java.time.LocalDateTime;
 @Table(name = "transactions")
 @Getter
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class Transaction {
 
     @Id

@@ -1,8 +1,11 @@
 package antifraud.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.NaturalId;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -12,6 +15,8 @@ import java.util.Collection;
 @Table(name = "users")
 @Getter
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class User {
 
     @Id
@@ -22,6 +27,7 @@ public class User {
     private String name;
 
     @Column(name = "username", unique = true)
+    @NaturalId
     private String username;
 
     @Column(name = "password")

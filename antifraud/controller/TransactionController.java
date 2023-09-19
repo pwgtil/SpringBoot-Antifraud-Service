@@ -1,7 +1,5 @@
 package antifraud.controller;
 
-import antifraud.controller.routing.Transaction;
-import antifraud.entity.enums.TransactionStatus;
 import antifraud.service.TransactionService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +21,7 @@ public class TransactionController {
         this.transactionService = transactionService;
     }
 
-    @PostMapping(Transaction.PATH)
+    @PostMapping(antifraud.controller.routing.Transaction.PATH)
     public ResponseEntity<TransactionDTO> performTransaction(@Valid @RequestBody TransactionDTO transaction) {
         transactionService.performTransaction(transaction);
         //test
