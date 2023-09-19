@@ -41,4 +41,22 @@ public class UserController {
         userService.deleteUser(username);
         return new ResponseEntity<>(Map.of("username", username, "status", "Deleted successfully!"), HttpStatus.OK);
     }
+
+    @PutMapping(antifraud.controller.routing.Role.PATH)
+    public ResponseEntity<UserDTO> changeUserAuthority(@RequestBody ChangeAuthority authority) {
+        UserDTO userDTO = userService.changeUserAuthorization(authority.username, authority.role);
+        return new ResponseEntity<>(userDTO, HttpStatus.OK);
+    }
+
+    @PutMapping(antifraud.controller.routing.Access.PATH)
+    public ResponseEntity<Map<String, String>> changeUserAccess(@RequestBody ChangeAccess access) {
+        userService.changeUserAccess(access.username, access.operation);
+        return new ResponseEntity<>(Map.of("status", "User " + access.username + " " + access.operation.toLowerCase() + "ed!"), HttpStatus.OK);
+    }
+
+    record ChangeAuthority(String username, String role) {
+    }
+
+    record ChangeAccess(String username, String operation) {
+    }
 }

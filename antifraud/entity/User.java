@@ -38,4 +38,12 @@ public class User {
 
     @Column(name = "authority")
     private String authority;
+
+    public void setAccountNonLocked(boolean isNonLocked) {
+        this.accountNonLocked = isNonLocked;
+    }
+
+    public void setAuthority(String authority) {
+        this.authority = authority;
+    }
 }

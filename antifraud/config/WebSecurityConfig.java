@@ -1,8 +1,6 @@
 package antifraud.config;
 
-import antifraud.controller.routing.List;
-import antifraud.controller.routing.Transaction;
-import antifraud.controller.routing.User;
+import antifraud.controller.routing.*;
 import antifraud.entity.enums.UserRoles;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +12,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+
+import javax.lang.model.element.AnnotationMirror;
 
 import static org.springframework.boot.autoconfigure.security.servlet.PathRequest.toH2Console;
 
@@ -42,23 +42,25 @@ public class WebSecurityConfig {
                 .csrf().ignoringRequestMatchers(toH2Console()).disable()
                 .headers(headers -> headers.frameOptions().disable())
                 .authorizeHttpRequests(auth -> auth
-                                .requestMatchers(HttpMethod.POST, Transaction.PATH)
-                                .authenticated()
-//                                  .hasAuthority(MERCHANT_AUTH)
-                                .requestMatchers(HttpMethod.POST, User.PATH)
-                                .permitAll()
-                                .requestMatchers(HttpMethod.GET, List.PATH)
-                                .authenticated()
-//                                  .hasAuthority(MERCHANT_AUTH)
-                                .requestMatchers(HttpMethod.DELETE, User.PATH + "/*")
-                                .authenticated()
-                                .requestMatchers(toH2Console())
-                                .permitAll()
-                                .requestMatchers("/actuator/shutdown")
-                                .permitAll()
-                                .requestMatchers("/error")
-                                .permitAll()
-                                .anyRequest().denyAll()
+                        .requestMatchers(HttpMethod.POST, Transaction.PATH)
+                        .hasAuthority(MERCHANT_AUTH)
+                        .requestMatchers(HttpMethod.POST, User.PATH)
+                        .permitAll()
+                        .requestMatchers(HttpMethod.GET, List.PATH)
+                        .hasAnyAuthority(ADMINISTRATOR_AUTH, SUPPORT_AUTH)
+                        .requestMatchers(HttpMethod.DELETE, User.PATH + "/*")
+                        .hasAuthority(ADMINISTRATOR_AUTH)
+                        .requestMatchers(HttpMethod.PUT, Access.PATH)
+                        .hasAuthority(ADMINISTRATOR_AUTH)
+                        .requestMatchers(HttpMethod.PUT, Role.PATH)
+                        .hasAuthority(ADMINISTRATOR_AUTH)
+                        .requestMatchers(toH2Console())
+                        .permitAll()
+                        .requestMatchers("/actuator/shutdown")
+                        .permitAll()
+                        .requestMatchers("/error")
+                        .permitAll()
+                        .anyRequest().denyAll()
                 )
                 .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)

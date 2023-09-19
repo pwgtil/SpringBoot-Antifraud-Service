@@ -1,7 +1,7 @@
 package antifraud.dto;
 
 import antifraud.entity.User;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import antifraud.entity.enums.UserRoles;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
@@ -23,7 +23,7 @@ public class UserDTO {
                 .id(user.getId())
                 .name(user.getName())
                 .username(user.getUsername())
-                .authority(user.getAuthority())
+                .role(user.getAuthority())
                 .build();
     }
 
@@ -42,9 +42,8 @@ public class UserDTO {
     @NotEmpty
     private String	password;
 
-    @JsonIgnore
-//    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private String authority;
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private String role;
 
     public User convertDto2User(String authority) {
         return User.builder()
@@ -52,7 +51,7 @@ public class UserDTO {
                 .username(getUsername())
                 .password(getPassword())
                 .authority(authority)
-                .accountNonLocked(true)
+                .accountNonLocked(isNonLockedByDefault(authority))
                 .build();
     }
 
@@ -62,5 +61,9 @@ public class UserDTO {
         } else {
             this.password = passwordEncoder.encode(this.getPassword());
         }
+    }
+
+    private boolean isNonLockedByDefault(String authority) {
+        return authority.equals(UserRoles.ADMINISTRATOR.name());
     }
 }

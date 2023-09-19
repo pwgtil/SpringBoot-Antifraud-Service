@@ -2,6 +2,7 @@ package antifraud.service;
 
 import antifraud.dto.UserDTO;
 import antifraud.entity.User;
+import antifraud.entity.enums.UserAccess;
 import antifraud.entity.enums.UserRoles;
 import antifraud.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -49,7 +51,7 @@ public class UserService {
         }
 
         if (userDTO.getUsername() == null || userDTO.getName() == null
-            || userDTO.getUsername().isBlank() || userDTO.getName().isBlank()) {
+                || userDTO.getUsername().isBlank() || userDTO.getName().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Name and/or username needs to be filled in!");
         }
 
@@ -78,5 +80,46 @@ public class UserService {
 
     private boolean userExists(String username) {
         return userRepository.countUsersByUsernameIgnoreCase(username) > 0;
+    }
+
+    public void changeUserAccess(String username, String operation) {
+        // Basic validations
+        User user = getUser(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!"));
+
+        if (user.getAuthority().equalsIgnoreCase(UserRoles.ADMINISTRATOR.name())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Operation no allowed on user with admin rights!");
+        }
+
+        if (UserAccess.LOCK.name().equalsIgnoreCase(operation)) {
+            user.setAccountNonLocked(false);
+        } else if (UserAccess.UNLOCK.name().equalsIgnoreCase(operation)) {
+            user.setAccountNonLocked(true);
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unexpected value: " + operation.toUpperCase());
+        }
+        userRepository.save(user);
+    }
+
+    public UserDTO changeUserAuthorization(String username, String authority) {
+
+        // Basic validations
+        User user = getUser(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!"));
+
+        if (Arrays.stream(UserRoles.values()).noneMatch(auth -> auth.name().equalsIgnoreCase(authority))
+                || authority.equalsIgnoreCase(UserRoles.ADMINISTRATOR.name())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Incorrect role!");
+        }
+
+        if (user.getAuthority().equalsIgnoreCase(authority)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "User already has that role!");
+        }
+
+        user.setAuthority(authority.toUpperCase());
+
+        userRepository.save(user);
+
+        return UserDTO.convertUser2DTO(user);
     }
 }
