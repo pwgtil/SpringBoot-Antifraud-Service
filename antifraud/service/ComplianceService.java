@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -60,8 +61,7 @@ public class ComplianceService {
 
         int nSum = 0;
         boolean isSecond = false;
-        for (int i = nDigits - 1; i >= 0; i--)
-        {
+        for (int i = nDigits - 1; i >= 0; i--) {
 
             int d = cardNo.charAt(i) - '0';
 
@@ -104,10 +104,16 @@ public class ComplianceService {
         return suspiciousIPsRepository.findAll();
     }
 
+    @Transactional
     public void deleteSuspiciousIP(String ip) {
+        if (!isCorrectIpAddress(ip)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "IP address format is wrong");
+        }
+
         if (suspiciousIPsRepository.findSuspiciousIPByIp(ip).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "IP address not found");
         }
+
         suspiciousIPsRepository.deleteByIp(ip);
     }
 
@@ -128,10 +134,16 @@ public class ComplianceService {
         return stolenCardsRepository.findAll();
     }
 
+    @Transactional
     public void deleteStolenCard(String number) {
+        if (!isCorrectCreditCardNumber(number)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Card number format is wrong");
+        }
+
         if (stolenCardsRepository.findStolenCardByNumber(number).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Card number not found");
         }
+
         stolenCardsRepository.deleteByNumber(number);
     }
 }

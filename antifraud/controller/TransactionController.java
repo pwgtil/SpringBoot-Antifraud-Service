@@ -56,7 +56,7 @@ public class TransactionController {
     @DeleteMapping(antifraud.controller.routing.StolenCard.PATH + "/{number}")
     public ResponseEntity<Map<String, String>> addStolenCard(@PathVariable String number) {
         transactionService.deleteStolenCard(number);
-        return new ResponseEntity<>(Map.of("status", "Card " + number + " successfully removed"), HttpStatus.OK);
+        return new ResponseEntity<>(Map.of("status", "Card " + number + " successfully removed!"), HttpStatus.OK);
     }
 
     /*
@@ -76,7 +76,7 @@ public class TransactionController {
     @DeleteMapping(antifraud.controller.routing.SuspiciousIP.PATH + "/{ip}")
     public ResponseEntity<Map<String, String>> addSuspiciousIP(@PathVariable String ip) {
         transactionService.deleteSuspiciousIP(ip);
-        return new ResponseEntity<>(Map.of("status", "IP " + ip + " successfully removed"), HttpStatus.OK);
+        return new ResponseEntity<>(Map.of("status", "IP " + ip + " successfully removed!"), HttpStatus.OK);
     }
 
 

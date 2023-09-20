@@ -10,9 +10,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 @Service
 @NoArgsConstructor
@@ -29,41 +27,53 @@ public class TransactionService {
 
 
     public void performTransaction(TransactionDTO transaction) {
-        List<String> info = new ArrayList<>();
-        TransactionStatus status;
+
+        Map<TransactionStatus, List<String>> statusLog = Map.of(
+                TransactionStatus.PROHIBITED, new ArrayList<>(),
+                TransactionStatus.MANUAL_PROCESSING, new ArrayList<>(),
+                TransactionStatus.ALLOWED, new ArrayList<>(List.of("none"))
+        );
 
         /*
-         * 1st level validation - Amount
-         * */
-        status = complianceService.verifyAmount(transaction.getAmount());
-        if (status != TransactionStatus.ALLOWED) {
-            info.add("amount");
-        }
-
-        /*
-         * 2nd level validation - Suspicious IP
+         * 1st level validation - Suspicious IP
          * */
         if (!complianceService.isCorrectIpAddress(transaction.getIp())
                 || complianceService.isSuspiciousIP(transaction.getIp())) {
-            status = TransactionStatus.PROHIBITED;
-            info.add("ip");
+            statusLog.get(TransactionStatus.PROHIBITED).add("ip");
         }
 
         /*
-         * 3rd level validation - stolen credit cards
+         * 2nd level validation - stolen credit cards
          * */
         if (!complianceService.isCorrectCreditCardNumber(transaction.getNumber())
                 || complianceService.isStolenCard(transaction.getNumber())) {
-            status = TransactionStatus.PROHIBITED;
-            info.add("card-number");
+            statusLog.get(TransactionStatus.PROHIBITED).add("card-number");
+        }
+
+        /*
+         * 3rd level validation - Amount
+         * */
+        TransactionStatus amountStatus = complianceService.verifyAmount(transaction.getAmount());
+        if (amountStatus != TransactionStatus.ALLOWED) {
+            statusLog.get(amountStatus).add("amount");
         }
 
         /*
          * Finalization
          * */
-        if (info.isEmpty()) {
-            info.add("none");
+        TransactionStatus status;
+        List<String> info;
+        if (!statusLog.get(TransactionStatus.PROHIBITED).isEmpty()) {
+            status = TransactionStatus.PROHIBITED;
+            info = statusLog.get(TransactionStatus.PROHIBITED);
+        } else if (!statusLog.get(TransactionStatus.MANUAL_PROCESSING).isEmpty()) {
+            status = TransactionStatus.MANUAL_PROCESSING;
+            info = statusLog.get(TransactionStatus.MANUAL_PROCESSING);
+        } else {
+            status = TransactionStatus.ALLOWED;
+            info = statusLog.get(TransactionStatus.ALLOWED);
         }
+
         info.sort(Comparator.naturalOrder());
 
 //        String infoString = String.join(", ", info);
