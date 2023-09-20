@@ -4,14 +4,18 @@ import antifraud.dto.TransactionDTO;
 import antifraud.entity.StolenCard;
 import antifraud.entity.SuspiciousIP;
 import antifraud.entity.Transaction;
+import antifraud.entity.enums.TransactionRegion;
 import antifraud.entity.enums.TransactionStatus;
 import antifraud.repository.TransactionRepository;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
+@Slf4j
 @Service
 @NoArgsConstructor
 public class TransactionService {
@@ -56,6 +60,48 @@ public class TransactionService {
         TransactionStatus amountStatus = complianceService.verifyAmount(transaction.getAmount());
         if (amountStatus != TransactionStatus.ALLOWED) {
             statusLog.get(amountStatus).add("amount");
+        }
+
+        /*
+         * 4th level validation - card-correlation
+         * */
+        List<TransactionRegion> regionsList = transactionRepository
+                .getRegionsByCardAndFromDateTime(
+                        transaction.getNumber(),
+                        transaction.getRegion(),
+                        transaction.getDate().minusMinutes(60L),
+                        transaction.getDate()
+                );
+        log.info(regionsList.toString());
+        if (regionsList.size() >= 2) {
+            TransactionStatus cardCorrelationStatus;
+            if (regionsList.size() > 2) {
+                cardCorrelationStatus = TransactionStatus.PROHIBITED;
+            } else {
+                cardCorrelationStatus = TransactionStatus.MANUAL_PROCESSING;
+            }
+            statusLog.get(cardCorrelationStatus).add("region-correlation");
+        }
+
+        /*
+         * 5th level validation - ip-correlation
+         * */
+        List<String> ipAddressesList = transactionRepository
+                .getRegionsByIPAndFromDateTime(
+                        transaction.getNumber(),
+                        transaction.getIp(),
+                        transaction.getDate().minusMinutes(60L),
+                        transaction.getDate()
+                );
+        log.info(ipAddressesList.toString());
+        if (ipAddressesList.size() >= 2) {
+            TransactionStatus ipCorrelationStatus;
+            if (ipAddressesList.size() > 2) {
+                ipCorrelationStatus = TransactionStatus.PROHIBITED;
+            } else {
+                ipCorrelationStatus = TransactionStatus.MANUAL_PROCESSING;
+            }
+            statusLog.get(ipCorrelationStatus).add("ip-correlation");
         }
 
         /*

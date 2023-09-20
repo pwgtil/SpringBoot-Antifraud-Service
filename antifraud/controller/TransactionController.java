@@ -34,7 +34,6 @@ public class TransactionController {
         transaction = TransactionDTO.builder()
                 .result(transaction.getResult())
                 .info(transaction.getInfo())
-                .amount(transaction.getAmount())
                 .build();
         return new ResponseEntity<>(transaction, HttpStatus.OK);
     }

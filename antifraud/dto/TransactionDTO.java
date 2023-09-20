@@ -30,11 +30,14 @@ public class TransactionDTO {
 
     @NotNull
     // valid IPv4 addresses
-    @Pattern(regexp = "\\b(1?\\d{1,2}|2[0-4]\\d|25[0-5])\\.(1?\\d{1,2}|2[0-4]\\d|25[0-5])\\.(1?\\d{1,2}|2[0-4]\\d|25[0-5])\\.(1?\\d{1,2}|2[0-4]\\d|25[0-5])\\b")
+    @Pattern(regexp = "\\b(1?\\d{1,2}|2[0-4]\\d|25[0-5])" +
+            "\\.(1?\\d{1,2}|2[0-4]\\d|25[0-5])" +
+            "\\.(1?\\d{1,2}|2[0-4]\\d|25[0-5])" +
+            "\\.(1?\\d{1,2}|2[0-4]\\d|25[0-5])\\b", message = "Incorrect IP address!")
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String ip;
 
-    @LuhnCheck
+    @LuhnCheck(message = "Incorrect card number")
     @NotNull
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String number;
@@ -45,12 +48,12 @@ public class TransactionDTO {
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String info;
 
-    @JsonIgnore
-//    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @NotNull
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private TransactionRegion region;
 
-    @JsonIgnore
-//    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @NotNull
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private LocalDateTime date;
 
     @Builder
