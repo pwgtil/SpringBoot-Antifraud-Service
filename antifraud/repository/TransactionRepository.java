@@ -25,4 +25,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
                                                @Param("dateTimeFrom") LocalDateTime dateTimeFrom,
                                                @Param("dateTimeTo") LocalDateTime dateTimeTo);
 
+    List<Transaction> findTransactionsByNumber(String cardNumber);
+
 }

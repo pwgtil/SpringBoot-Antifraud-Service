@@ -1,5 +1,6 @@
 package antifraud.controller;
 
+import antifraud.dto.FeedbackDTO;
 import antifraud.entity.StolenCard;
 import antifraud.entity.SuspiciousIP;
 import antifraud.service.TransactionService;
@@ -18,14 +19,14 @@ import java.util.Map;
 @Validated
 public class TransactionController {
 
-    private TransactionService transactionService;
+    private final TransactionService transactionService;
 
     public TransactionController(@Autowired TransactionService transactionService) {
         this.transactionService = transactionService;
     }
 
     /*
-     * Transactions section
+     * New transactions section
      * */
     @PostMapping(antifraud.controller.routing.Transaction.PATH)
     public ResponseEntity<TransactionDTO> performTransaction(@Valid @RequestBody TransactionDTO transaction) {
@@ -78,5 +79,25 @@ public class TransactionController {
         return new ResponseEntity<>(Map.of("status", "IP " + ip + " successfully removed!"), HttpStatus.OK);
     }
 
+    /*
+     * Feedback section
+     * */
+    @PutMapping(antifraud.controller.routing.Transaction.PATH)
+    public ResponseEntity<FeedbackDTO> addFeedback(@RequestBody FeedbackDTO feedback) {
+        FeedbackDTO responseFeedback = transactionService.addFeedback(feedback);
+        return new ResponseEntity<>(responseFeedback, HttpStatus.OK);
+    }
+
+    @GetMapping(antifraud.controller.routing.History.PATH)
+    public ResponseEntity<List<FeedbackDTO>> getTransactionHistory() {
+        List<FeedbackDTO> transactionHistory = transactionService.getTransactionHistory("");
+        return new ResponseEntity<>(transactionHistory, HttpStatus.OK);
+    }
+
+    @GetMapping(antifraud.controller.routing.History.PATH + "/{cardNumber}")
+    public ResponseEntity<List<FeedbackDTO>> getTransactionHistoryByCardNumber(@PathVariable String cardNumber) {
+        List<FeedbackDTO> transactionHistory = transactionService.getTransactionHistory(cardNumber);
+        return new ResponseEntity<>(transactionHistory, HttpStatus.OK);
+    }
 
 }

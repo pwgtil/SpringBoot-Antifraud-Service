@@ -1,5 +1,6 @@
 package antifraud.service;
 
+import antifraud.dto.FeedbackDTO;
 import antifraud.dto.TransactionDTO;
 import antifraud.entity.StolenCard;
 import antifraud.entity.SuspiciousIP;
@@ -10,10 +11,13 @@ import antifraud.repository.TransactionRepository;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -41,7 +45,7 @@ public class TransactionService {
         /*
          * 1st level validation - Suspicious IP
          * */
-        if (!complianceService.isCorrectIpAddress(transaction.getIp())
+        if (complianceService.isNotCorrectIpAddress(transaction.getIp())
                 || complianceService.isSuspiciousIP(transaction.getIp())) {
             statusLog.get(TransactionStatus.PROHIBITED).add("ip");
         }
@@ -49,7 +53,7 @@ public class TransactionService {
         /*
          * 2nd level validation - stolen credit cards
          * */
-        if (!complianceService.isCorrectCreditCardNumber(transaction.getNumber())
+        if (complianceService.isNotCorrectCreditCardNumber(transaction.getNumber())
                 || complianceService.isStolenCard(transaction.getNumber())) {
             statusLog.get(TransactionStatus.PROHIBITED).add("card-number");
         }
@@ -165,5 +169,66 @@ public class TransactionService {
 
     public void deleteSuspiciousIP(String ip) {
         complianceService.deleteSuspiciousIP(ip);
+    }
+
+    @Transactional
+    public FeedbackDTO addFeedback(FeedbackDTO feedback) {
+        Transaction transaction = transactionRepository
+                .findById(feedback.getTransactionId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found"));
+        if (transaction.getFeedback() != TransactionStatus.INITIAL) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Feedback already provided for this transaction");
+        }
+        TransactionStatus feedbackStatus;
+        try {
+            feedbackStatus = TransactionStatus.valueOf(feedback.getFeedback());
+            if (feedbackStatus == TransactionStatus.INITIAL) {
+                throw new IllegalArgumentException();
+            }
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Incorrect feedback value. Choose from ALLOWED, MANUAL_PROCESSING & PROHIBITED");
+        }
+        complianceService.updateTransactionLimit(transaction.getResult(), feedbackStatus, feedback.getAmount());
+        
+        transaction.setFeedback(feedbackStatus);
+        
+        transactionRepository.save(transaction);
+        
+        return new FeedbackDTO(transaction.getId(),
+                transaction.getAmount(),
+                transaction.getResult(),
+                transaction.getIp(),
+                transaction.getNumber(),
+                transaction.getInfo(),
+                transaction.getRegion(),
+                transaction.getDate(),
+                transaction.getFeedback());
+    }
+
+    public List<FeedbackDTO> getTransactionHistory(String cardNumber) {
+        List<Transaction> list;
+
+        if (cardNumber.isBlank()) {
+            list = transactionRepository.findAll();
+        } else {
+            if (complianceService.isNotCorrectCreditCardNumber(cardNumber)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Card number incorrect!");
+            }
+            list = transactionRepository.findTransactionsByNumber(cardNumber);
+            if (list.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No transactions found for specific card number");
+            }
+        }
+        return list.stream().map(t ->
+                        new FeedbackDTO(t.getId(),
+                                t.getAmount(),
+                                t.getResult(),
+                                t.getIp(),
+                                t.getNumber(),
+                                t.getInfo(),
+                                t.getRegion(),
+                                t.getDate(),
+                                t.getFeedback()))
+                .collect(Collectors.toList());
     }
 }
