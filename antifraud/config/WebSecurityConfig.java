@@ -58,6 +58,7 @@ public class WebSecurityConfig {
                         .hasAuthority(SUPPORT_AUTH)
                         .requestMatchers(HttpMethod.GET, History.PATH, History.PATH + "/*")
                         .hasAuthority(SUPPORT_AUTH)
+//                                .permitAll()
                         .requestMatchers(HttpMethod.POST, Transaction.PATH)
                         .hasAuthority(MERCHANT_AUTH)
                         .requestMatchers(HttpMethod.POST, User.PATH)

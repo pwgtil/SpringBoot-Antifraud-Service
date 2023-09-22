@@ -1,12 +1,12 @@
 package antifraud.service;
 
-import antifraud.config.TransactionLimitsConfig;
 import antifraud.entity.StolenCard;
 import antifraud.entity.SuspiciousIP;
 import antifraud.entity.enums.TransactionStatus;
 import antifraud.repository.StolenCardsRepository;
 import antifraud.repository.SuspiciousIPsRepository;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -18,6 +18,7 @@ import java.util.function.Consumer;
 
 @Service
 @Getter
+@Slf4j
 public class ComplianceService {
 
 //    private final Long allowedThreshold;
@@ -25,13 +26,13 @@ public class ComplianceService {
 
     private final SuspiciousIPsRepository suspiciousIPsRepository;
     private final StolenCardsRepository stolenCardsRepository;
-    private TransactionLimitsConfig limits;
+    private ConfigService limits;
     private final Consumer<Long>[][] limitUpdateMatrix = new Consumer[3][3];
 
     @Autowired
     public ComplianceService(SuspiciousIPsRepository suspiciousIPsRepository,
                              StolenCardsRepository stolenCardsRepository,
-                             TransactionLimitsConfig limits)
+                             ConfigService limits)
 //                             @Value("${antifraudsystem.allowed-limit}") Long allowedThreshold,
 //                             @Value("${antifraudsystem.manual-limit}") Long manualThreshold)
     {
@@ -49,10 +50,10 @@ public class ComplianceService {
         limitUpdateMatrix[2][2] = limitUpdateException;
         limitUpdateMatrix[1][0] = increaseMaxAllowed;
         limitUpdateMatrix[2][0] = increaseMaxBoth;
-        limitUpdateMatrix[1][0] = decreaseMaxAllowed;
-        limitUpdateMatrix[1][2] = increaseMaxManual;
-        limitUpdateMatrix[2][0] = decreaseMaxBoth;
-        limitUpdateMatrix[2][1] = decreaseMaxManual;
+        limitUpdateMatrix[0][1] = decreaseMaxAllowed;
+        limitUpdateMatrix[2][1] = increaseMaxManual;
+        limitUpdateMatrix[0][2] = decreaseMaxBoth;
+        limitUpdateMatrix[1][2] = decreaseMaxManual;
     }
 
     public TransactionStatus verifyAmount(Long amount) {
@@ -171,7 +172,9 @@ public class ComplianceService {
      * Functional programming for fun
      * */
     public void updateTransactionLimit(TransactionStatus result, TransactionStatus feedback, long amount) {
+        log.info("Amounts before update [allowed / manual]: " + limits.getMaxAllowed() + " / " + limits.getMaxManual());
         limitUpdateMatrix[result.ordinal()][feedback.ordinal()].accept(amount);
+        log.info("Amounts after update [allowed / manual]: " + limits.getMaxAllowed() + " / " + limits.getMaxManual());
     }
 
     // new_limit = 0.8 * current_limit + 0.2 * value_from_transaction
@@ -187,7 +190,7 @@ public class ComplianceService {
     // new_limit = 0.8 * current_limit - 0.2 * value_from_transaction
     Consumer<Long> decreaseMaxAllowed = (amount) -> limits.setMaxAllowed(Double.valueOf(Math.ceil(0.8 * limits.getMaxAllowed() - 0.2 * amount)).longValue());
 
-    Consumer<Long> decreaseMaxManual = (amount) -> limits.setMaxManual(Double.valueOf(Math.ceil(0.8 * limits.getMaxManual() + 0.2 * amount)).longValue());
+    Consumer<Long> decreaseMaxManual = (amount) -> limits.setMaxManual(Double.valueOf(Math.ceil(0.8 * limits.getMaxManual() - 0.2 * amount)).longValue());
 
     Consumer<Long> decreaseMaxBoth = (amount) -> {
         decreaseMaxAllowed.accept(amount);

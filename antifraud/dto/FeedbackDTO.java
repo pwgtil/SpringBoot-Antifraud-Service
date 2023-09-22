@@ -2,6 +2,7 @@ package antifraud.dto;
 
 import antifraud.entity.enums.TransactionRegion;
 import antifraud.entity.enums.TransactionStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
@@ -31,16 +32,17 @@ public class FeedbackDTO {
     private String number;
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private TransactionStatus result;
-
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private String info;
-
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private TransactionRegion region;
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private LocalDateTime date;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private TransactionStatus result;
+
+    @JsonIgnore
+//    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private String info;
 
     @NotNull
     @JsonProperty(access = JsonProperty.Access.READ_WRITE)
@@ -56,7 +58,7 @@ public class FeedbackDTO {
         this.info = info;
         this.region = region;
         this.date = date;
-        if (feedback == TransactionStatus.INITIAL) {
+        if (feedback == TransactionStatus.INITIAL || feedback == null) {
             this.feedback = "";
         } else {
             this.feedback = feedback.name();

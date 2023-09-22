@@ -76,7 +76,6 @@ public class TransactionService {
                         transaction.getDate().minusMinutes(60L),
                         transaction.getDate()
                 );
-        log.info(regionsList.toString());
         if (regionsList.size() >= 2) {
             TransactionStatus cardCorrelationStatus;
             if (regionsList.size() > 2) {
@@ -97,7 +96,6 @@ public class TransactionService {
                         transaction.getDate().minusMinutes(60L),
                         transaction.getDate()
                 );
-        log.info(ipAddressesList.toString());
         if (ipAddressesList.size() >= 2) {
             TransactionStatus ipCorrelationStatus;
             if (ipAddressesList.size() > 2) {
@@ -131,10 +129,10 @@ public class TransactionService {
 
         transaction.setResult(status);
         transaction.setInfo(infoString);
-        saveTransaction(transaction);
+        saveNewTransaction(transaction);
     }
 
-    private void saveTransaction(TransactionDTO input) {
+    private void saveNewTransaction(TransactionDTO input) {
         Transaction transaction = Transaction.builder()
                 .amount(input.getAmount())
                 .ip(input.getIp())
@@ -143,6 +141,7 @@ public class TransactionService {
                 .region(input.getRegion())
                 .result(input.getResult())
                 .info(input.getInfo())
+                .feedback(TransactionStatus.INITIAL)
                 .build();
         transactionRepository.save(transaction);
     }
@@ -176,9 +175,6 @@ public class TransactionService {
         Transaction transaction = transactionRepository
                 .findById(feedback.getTransactionId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found"));
-        if (transaction.getFeedback() != TransactionStatus.INITIAL) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Feedback already provided for this transaction");
-        }
         TransactionStatus feedbackStatus;
         try {
             feedbackStatus = TransactionStatus.valueOf(feedback.getFeedback());
@@ -188,8 +184,11 @@ public class TransactionService {
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Incorrect feedback value. Choose from ALLOWED, MANUAL_PROCESSING & PROHIBITED");
         }
-        complianceService.updateTransactionLimit(transaction.getResult(), feedbackStatus, feedback.getAmount());
-        
+        if (!(transaction.getFeedback() == TransactionStatus.INITIAL || transaction.getFeedback() == null)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Feedback already provided for this transaction");
+        }
+        complianceService.updateTransactionLimit(transaction.getResult(), feedbackStatus, transaction.getAmount());
+
         transaction.setFeedback(feedbackStatus);
         
         transactionRepository.save(transaction);
